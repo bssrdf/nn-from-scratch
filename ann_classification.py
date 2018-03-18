@@ -1,6 +1,8 @@
 __author__ = 'm.bashari'
 import numpy as np
 from sklearn import datasets, linear_model
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 
@@ -14,7 +16,7 @@ class Config:
 
 def generate_data():
     np.random.seed(0)
-    X, y = datasets.make_moons(500, noise=0.20)
+    X, y = datasets.make_moons(800, noise=0.20)
     return X, y
 
 
@@ -22,7 +24,7 @@ def visualize(X, y, model):
     # plt.scatter(X[:, 0], X[:, 1], s=40, c=y, cmap=plt.cm.Spectral)
     # plt.show()
     plot_decision_boundary(lambda x:predict(model,x), X, y)
-    plt.title("Logistic Regression")
+    plt.title("3-layer NN")
 
 
 def plot_decision_boundary(pred_func, X, y):
@@ -92,12 +94,17 @@ def build_model(X, y, nn_hdim, num_passes=20000, batchsize=64, print_loss=False)
     for i in range(0, num_passes):
 
         #np.random.seed(0)
-        ss = np.random.choice(range(num_examples), batchsize) 
-        Xs = X[ss,:] 
-        ys = y[ss] 
+        if batchsize > 0:
+            ss = np.random.choice(range(num_examples), batchsize) 
+            Xs = X[ss,:] 
+            ys = y[ss] 
+            span = range(batchsize)
+        else:
+            Xs = X
+            ys = y
+            span = range(num_examples)
         # Forward propagation
         z1 = Xs.dot(W1) + b1
-        #z1 = X.dot(W1) + b1
         a1 = np.tanh(z1)
         z2 = a1.dot(W2) + b2
         exp_scores = np.exp(z2)
@@ -105,12 +112,10 @@ def build_model(X, y, nn_hdim, num_passes=20000, batchsize=64, print_loss=False)
 
         # Backpropagation
         delta3 = probs
-        #delta3[range(num_examples), y] -= 1
-        delta3[range(batchsize), ys] -= 1
+        delta3[span, ys] -= 1
         dW2 = (a1.T).dot(delta3)
         db2 = np.sum(delta3, axis=0, keepdims=True)
         delta2 = delta3.dot(W2.T) * (1 - np.power(a1, 2))
-        #dW1 = np.dot(X.T, delta2)
         dW1 = np.dot(Xs.T, delta2)
         db1 = np.sum(delta2, axis=0)
 
@@ -145,7 +150,7 @@ def classify(X, y):
 
 def main():
     X, y = generate_data()
-    model = build_model(X, y, 3, print_loss=True)
+    model = build_model(X, y, 3, num_passes=40000, batchsize=128, print_loss=True)
     visualize(X, y, model)
 
 
